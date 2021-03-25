@@ -1,5 +1,6 @@
 #include "esp_camera.h"
 #include <WiFi.h>
+#include <ESPmDNS.h>
 
 //
 // WARNING!!! Make sure that you have either selected ESP32 Wrover Module,
@@ -7,16 +8,17 @@
 //
 
 // Select camera model
-#define CAMERA_MODEL_WROVER_KIT
+//#define CAMERA_MODEL_WROVER_KIT
 //#define CAMERA_MODEL_ESP_EYE
 //#define CAMERA_MODEL_M5STACK_PSRAM
 //#define CAMERA_MODEL_M5STACK_WIDE
-//#define CAMERA_MODEL_AI_THINKER
+#define CAMERA_MODEL_AI_THINKER
 
 #include "camera_pins.h"
 
-const char* ssid = "*********";
-const char* password = "*********";
+const char* device_name = "cam4";
+const char* ssid = "net30";
+const char* password = "secret";
 
 void startCameraServer();
 
@@ -77,16 +79,23 @@ void setup() {
     s->set_saturation(s, -2);//lower the saturation
   }
   //drop down frame size for higher initial frame rate
-  s->set_framesize(s, FRAMESIZE_QVGA);
+  s->set_framesize(s, FRAMESIZE_SVGA);
 
 #if defined(CAMERA_MODEL_M5STACK_WIDE)
   s->set_vflip(s, 1);
   s->set_hmirror(s, 1);
 #endif
 
+  WiFi.setHostname(device_name);
   WiFi.begin(ssid, password);
 
+  int retries = 0;
+
   while (WiFi.status() != WL_CONNECTED) {
+    if(retries++ > 50) {
+      esp_sleep_enable_timer_wakeup(10);
+      esp_deep_sleep_start();
+    }
     delay(500);
     Serial.print(".");
   }
@@ -98,9 +107,21 @@ void setup() {
   Serial.print("Camera Ready! Use 'http://");
   Serial.print(WiFi.localIP());
   Serial.println("' to connect");
+
+  Serial.printf("Or use 'http://%s.local' to connect\n", device_name);
+
+  pinMode(4, OUTPUT);
+  digitalWrite(4, HIGH);
 }
 
 void loop() {
+  static int time_to_reboot = 10;
   // put your main code here, to run repeatedly:
+  if(MDNS.begin(device_name)) MDNS.addService("http", "tcp", 80);
   delay(10000);
+  Serial.println(time_to_reboot);
+  if(time_to_reboot-- <= 0) {
+    digitalWrite(4, LOW);
+    ESP.restart();
+  }
 }

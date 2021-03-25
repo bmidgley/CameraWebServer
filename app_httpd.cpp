@@ -33,6 +33,7 @@
 #define FACE_COLOR_YELLOW (FACE_COLOR_RED | FACE_COLOR_GREEN)
 #define FACE_COLOR_CYAN   (FACE_COLOR_BLUE | FACE_COLOR_GREEN)
 #define FACE_COLOR_PURPLE (FACE_COLOR_BLUE | FACE_COLOR_RED)
+int led_status = 1;
 
 typedef struct {
         size_t size; //number of values used for filtering
@@ -524,6 +525,11 @@ static esp_err_t cmd_handler(httpd_req_t *req){
             detection_enabled = val;
         }
     }
+    else if(!strcmp(variable, "flash")) {
+      led_status = atoi(value);
+      pinMode(4, OUTPUT);
+      digitalWrite(4, led_status);
+    }
     else {
         res = -1;
     }
@@ -570,6 +576,7 @@ static esp_err_t status_handler(httpd_req_t *req){
     p+=sprintf(p, "\"colorbar\":%u,", s->status.colorbar);
     p+=sprintf(p, "\"face_detect\":%u,", detection_enabled);
     p+=sprintf(p, "\"face_enroll\":%u,", is_enrolling);
+    p+=sprintf(p, "\"flash\":%u,", led_status);
     p+=sprintf(p, "\"face_recognize\":%u", recognition_enabled);
     *p++ = '}';
     *p++ = 0;
@@ -582,9 +589,9 @@ static esp_err_t index_handler(httpd_req_t *req){
     httpd_resp_set_type(req, "text/html");
     httpd_resp_set_hdr(req, "Content-Encoding", "gzip");
     sensor_t * s = esp_camera_sensor_get();
-    if (s->id.PID == OV3660_PID) {
-        return httpd_resp_send(req, (const char *)index_ov3660_html_gz, index_ov3660_html_gz_len);
-    }
+//    if (s->id.PID == OV3660_PID) {
+//        return httpd_resp_send(req, (const char *)index_ov3660_html_gz, index_ov3660_html_gz_len);
+//    }
     return httpd_resp_send(req, (const char *)index_ov2640_html_gz, index_ov2640_html_gz_len);
 }
 
