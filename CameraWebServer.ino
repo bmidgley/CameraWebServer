@@ -104,11 +104,12 @@ void setup() {
 
   startCameraServer();
 
-  Serial.print("Camera Ready! Use 'http://");
+  Serial.println();
+  Serial.print("Web UI: http://");
   Serial.print(WiFi.localIP());
-  Serial.println("' to connect");
-
-  Serial.printf("Or use 'http://%s.local' to connect\n", device_name);
+  Serial.printf(" or http://%s.local\n", device_name);
+  Serial.printf("Snapshot: http://%s.local/capture\n", device_name);
+  Serial.printf("Stream: http://%s.local:81/stream\n", device_name);
 
   pinMode(4, OUTPUT);
   digitalWrite(4, HIGH);
