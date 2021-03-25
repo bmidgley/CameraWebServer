@@ -8,3 +8,5 @@ Modifications to the original CameraWebServer to make it easier to use.
 * Default to SVGA resolution
 * Provide MDNS to find the board more easily
 * Reboot if WiFi starts in a bad state
+* Document capture url: http://address/capture
+* Document stream url: http://address:81/stream
