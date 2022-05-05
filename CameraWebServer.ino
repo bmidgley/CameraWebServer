@@ -1,6 +1,8 @@
 #include "esp_camera.h"
 #include <WiFi.h>
 #include <ESPmDNS.h>
+#include "SD_MMC.h"
+#include "SPI.h"
 
 //
 // WARNING!!! Make sure that you have either selected ESP32 Wrover Module,
@@ -22,10 +24,22 @@ const char* password = "secret";
 
 void startCameraServer();
 
+void initSDCard( void ) {
+  uint8_t cardType = SD_MMC.cardType();
+  if (cardType == CARD_NONE){
+    Serial.println("No SD card present");
+    return;
+  }
+
+//  if( !SD_MMC.begin() ) { // fast 4bit mode
+  if( !SD_MMC.begin( "/sdcard", true ) ) { // slow 1bit mode
+    Serial.println( "SD card init failed" );
+    return;
+  }
+}
+
 void setup() {
   Serial.begin(115200);
-  Serial.setDebugOutput(true);
-  Serial.println();
 
   camera_config_t config;
   config.ledc_channel = LEDC_CHANNEL_0;
@@ -105,24 +119,30 @@ void setup() {
   startCameraServer();
 
   Serial.println();
-  Serial.print("Web UI: http://");
-  Serial.print(WiFi.localIP());
-  Serial.printf(" or http://%s.local\n", device_name);
-  Serial.printf("Snapshot: http://%s.local/capture\n", device_name);
-  Serial.printf("Stream: http://%s.local:81/stream\n", device_name);
+  Serial.printf("Snapshot: http://%s.local/capture, ", device_name);
+  Serial.printf("Stream: http://%s.local:81/stream, ", device_name);
+  Serial.printf("Manage: http://%s.local or\n", device_name);
+  Serial.print("http://");
+  Serial.println(WiFi.localIP());
 
+  initSDCard();
+
+  // flash off
   pinMode(4, OUTPUT);
-  digitalWrite(4, HIGH);
+  digitalWrite(4, LOW);
+
+  // little led on
+  pinMode(33, OUTPUT);
+  digitalWrite(33, LOW);
 }
 
 void loop() {
-  static int time_to_reboot = 10;
-  // put your main code here, to run repeatedly:
   if(MDNS.begin(device_name)) MDNS.addService("http", "tcp", 80);
   delay(10000);
-  Serial.println(time_to_reboot);
-  if(time_to_reboot-- <= 0) {
-    digitalWrite(4, LOW);
-    ESP.restart();
+  Serial.print("http://");
+  Serial.println(WiFi.localIP());
+  String ip = Serial.readString();
+  if(!ip.equals("")) {
+    Serial.print(ip);
   }
 }
